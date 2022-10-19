@@ -107,11 +107,10 @@ class body:
 
         vel = math.sqrt(self.xvel**2 + self.yvel**2 + self.zvel**2)
         area = math.pi * self.real_radius**2
+        drag = -0.5 * 0.5 * area * (vel**2) * rho
 
-        drag = 0.5 * 0.5 * area * (vel**2) * rho
-
-        psi = math.asin(self.z/self.distance_to_center)
-        theta = math.atan2(self.y, self.x)
+        psi = math.asin(self.zvel/vel)
+        theta = math.atan2(self.yvel, self.xvel)
 
         drag_plane = drag * math.cos(psi)
         drag_z = drag* math.sin(psi)
