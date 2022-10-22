@@ -38,8 +38,8 @@ class body:
     SIR = 1361 # Solar irradiance 
     MO = 25000000 # mean orbital radius of the debris
     px = 250
-    SCALE = px/(1.5*MO)
-    TIMESTEP = 30 # dt = 10s
+    SCALE = px/(15*MO)
+    TIMESTEP = 10 # dt = 10s
 
     def __init__ (self, x, y, z, radius, color, mass, real_radius):
         self.x = x
@@ -136,7 +136,7 @@ class body:
                 total_fx+= drx
                 total_fy+= dry
                 total_fz+= drz
-                total_fx += self.G*self.mass*(1.9*10**30)/(self.AU -self.x)**2 # applying the modification due to the attraction from the Sun
+                #total_fx += self.G*self.mass*(1.9*10**30)/(self.AU -self.x)**2 # applying the modification due to the attraction from the Sun
 
         if self.is_debris:
             if math.sqrt(self.y**2 + self.z**2) > 6380000 or self.x > 0:
@@ -213,14 +213,14 @@ def line(a, b):
     
  
 
-earth = body(0, 0, 0, 15, GREEN, 5.972*10**24, 6371)
+earth = body(0, 0, 0, 15, GREEN, 5.972*(10**24), 6371)
 earth.center = True
 
-moon = body(-1 * body.RL, 0,0, 8, WHITE, 7.34767309*10**22, 1737.4 )
+moon = body(-1 * body.RL, 0,0, 8, WHITE, 7.34767309*(10**22), 1737.4 )
 moon.yvel = 1027.778
 
 debris = body(-1*body.MO, 0,10000000, 5, RED, 0.001, 0.01)
-debris.yvel = 4138.88
+debris.yvel = 3938.88
 debris.is_debris = True
 
 
@@ -278,7 +278,7 @@ def main():
         idisplay = font.render(str(i_rn), 1, WHITE)
         longdisplay = font.render(str(long2), 1, WHITE)
         endisplay = font.render(str(en), 1, WHITE)
-        tdisplay = font.render(str(time_elapsed), 1, WHITE)
+        tdisplay = font.render(str(time_elapsed*20.16), 1, WHITE)
 
         aeq = font.render("a(m) = ", 1, WHITE)
         eeq = font.render("e = ", 1, WHITE)
