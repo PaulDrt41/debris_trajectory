@@ -6,6 +6,8 @@ from turtle import width
 import pygame
 import math
 import numpy
+import matplotlib
+import matplotlib.pyplot as plt
 pygame.init()
 
 WHITE=(255, 255, 255)
@@ -24,11 +26,29 @@ pygame.display.set_caption("Debris Simulation")
 apg_x, apg_y, apg_z = 0, 0, 0
 prg_x, prg_y, prg_z= 0, 0, 0
 
+apg_angles = []
+apgangle = -3.15 + 0.00287
+prg_angles = []
+prgangle = -0.395 + 0.02 - 0.006 - 0.0142
+apg_selected = False
+prg_selected = False
+
+apg0 = 0
+prg0 = 0
+
+apg0_x, apg0_y, apg0_z, prg0_x, prg0_y, prg0_z = 0, 0, 0, 0, 0, 0
+
 anode = (0, 0)
 dnode = (0, 0)
 xn , yn = 0, 0 
 
 top = int(input("1 for side view \n0 for top view\n"))
+def dist(xa, ya, za, xb, yb, zb):
+    dx = xa-xb
+    dy = ya-yb
+    dz = za-zb
+    distance = math.sqrt(dx**2 + dy**2 + dz**2)
+    return distance
 class body:
     AU = 149597871000
     RL = 384000000 # radius of the Moon's orbit
@@ -38,7 +58,7 @@ class body:
     SIR = 1361 # Solar irradiance 
     MO = 25000000 # mean orbital radius of the debris
     px = 250
-    SCALE = px/(15*MO)
+    SCALE = px/(MO)
     TIMESTEP = 10 # dt = 10s
 
     def __init__ (self, x, y, z, radius, color, mass, real_radius):
@@ -58,12 +78,11 @@ class body:
         self.is_debris = False
         self.colided = False
         self.distance_to_center = 0
-        self.apg = self.MO
-        self.prg = 100*self.MO
+        self.apg = 0
+        self.prg = math.sqrt(self.x**2  + self.y**2 + self.z*2)*2
         self.orbit = []
         self.zs = [self.z]
         self.zi = 0
-
 
     def draw(self, win):
         x = self.x*self.SCALE + WIDTH/2
@@ -136,7 +155,7 @@ class body:
                 total_fx+= drx
                 total_fy+= dry
                 total_fz+= drz
-                #total_fx += self.G*self.mass*(1.9*10**30)/(self.AU -self.x)**2 # applying the modification due to the attraction from the Sun
+                #total_fx += self.G*self.mass*(1.9*(10**30))/(self.AU -self.x)**2 # applying the attraction from the Sun
 
         if self.is_debris:
             if math.sqrt(self.y**2 + self.z**2) > 6380000 or self.x > 0:
@@ -171,30 +190,68 @@ class body:
         disty = self.y - other.y
         distz = self.z - other.z
         dist = math.sqrt(distx**2 + disty**2 + distz**2)
-        e = -(self.G*self.mass*other.mass)/dist 
-        return e
+        erg = -(self.G*self.mass*other.mass)/dist 
+        return erg
 def toScale(x, y, body):
     x = x*body.SCALE + WIDTH/2
     y = HEIGHT/2 - y*body.SCALE 
     return x, y
+apg_neg_ang = 0
+prg_neg_ang = 0
 
 def elements(self):
-    global apg_x, prg_x, apg_y, prg_y, apg_z, prg_z
+    global apg_neg_ang, prg_neg_ang, apg_x, prg_x, apg_y, prg_y, apg_z, prg_z, apg_selected, prg_selected, apg0, prg0, apg_angles, prg_angles, apg0_x, apg0_y, apg0_z, prg0_x, prg0_y, prg0_z
+    
+    apgang = 0
+    apgsgn = 0
+    prgsgn = 0
     if self.distance_to_center > self.apg:
+        if ((self.yvel > 0 and self.y < apg0_y) or (self.yvel < 0 and self.y > apg0_y)) and apg_neg_ang == 0:
+            apgsgn = -1
+        else:
+            apg0 = self.apg
+            apg0_x = apg_x
+            apg0_y = apg_y
+            apg0_z = apg_z
+            apgsgn = +1
         self.apg = self.distance_to_center
         apg_x = self.x
         apg_y = self.y
         apg_z = self.z
-           
-    if self.distance_to_center < self.prg:
+        apgdistanc = dist(apg_x, apg_y, apg_z, apg0_x, apg0_y, apg0_z)
+        if self.apg != 0 and apg0 != 0: apgang = math.acos((apg0**2 + self.apg**2 - apgdistanc**2)/(2*apg0*self.apg))
+        if ((self.yvel > 0 and self.y < apg0_y) or (self.yvel < 0 and self.y > apg0_y)) and apg_neg_ang == 0:
+            apg_neg_ang = -1 * apgang
+            apgang = 0
+    elif apg_neg_ang != 0:
+        apgang = apgang + apg_neg_ang
+        apg_neg_ang = 0
+    prgang = 0
+    if self.distance_to_center <= self.prg:
+        if ((self.yvel > 0 and self.y < prg0_y) or (self.yvel < 0 and self.y > prg0_y)) and prg_neg_ang == 0:
+            print("yep yep")
+            prgsgn = -1
+        else:
+            prg0 = self.prg
+            prg0_x = prg_x
+            prg0_y = prg_y
+            prg0_z = prg_z
+            prgsgn = +1
         self.prg = self.distance_to_center
         prg_x = self.x
         prg_y = self.y
         prg_z = self.z
-         
+        prgdistanc = dist(prg_x, prg_y, prg_z, prg0_x, prg0_y, prg0_z)
+        if prg0 != 0 and self.prg != 0: prgang = math.acos((prg0**2 + self.prg**2 - prgdistanc**2)/(2*prg0*self.prg))
+        if ((self.yvel > 0 and self.y < prg0_y) or (self.yvel < 0 and self.y > prg0_y)) and prg_neg_ang == 0:
+            prg_neg_ang = -1*prgang
+            prgang = 0
+    elif prg_neg_ang != 0:
+        prgang = prgang + prg_neg_ang
+        prg_neg_ang = 0
     a = (self.apg + self.prg)/2
     e = (self.apg/a) - 1
-    return a , e
+    return a , e ,apgang, prgang
 
 def line(a, b):
     xa, ya = a
@@ -213,26 +270,33 @@ def line(a, b):
     
  
 
-earth = body(0, 0, 0, 15, GREEN, 5.972*(10**24), 6371)
+earth = body(0, 0, 0, 15, GREEN, 5.972*(10**24), 6371000)
 earth.center = True
 
-moon = body(-1 * body.RL, 0,0, 8, WHITE, 7.34767309*(10**22), 1737.4 )
+moon = body(-1 * body.RL, 0,0, 8, WHITE, 7.34767309*(10**22), 1737400 )
 moon.yvel = 1027.778
 
-debris = body(-1*body.MO, 0,10000000, 5, RED, 0.001, 0.01)
+debris = body(-1*body.MO, 0,10000000, 5, RED, 0.0113, 0.001)
 debris.yvel = 3938.88
+
 debris.is_debris = True
+apg0 = prg0 = math.sqrt(debris.x**2 + debris.y**2 + debris.z**2)
+apg0_x = prg0_x = debris.x
+apg0_y = prg0_y = debris.y
+apg0_z = prg0_z = debris.z
+
 
 
 time_elapsed =0
 bodies = [earth, moon, debris]
-e_tot = []
+e_tot = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]
+tstamp_tot = []
 def main():
     run = True
     clock = pygame.time.Clock()
 
     while run:
-        global time_elapsed, xn, yn
+        global time_elapsed, xn, yn, apgangle, prgangle
         clock.tick(60)
         millis = clock.get_time()
         time_elapsed += debris.TIMESTEP/millis
@@ -247,7 +311,7 @@ def main():
                     body.px+=5
                 elif event.button == 5:
                     body.px-=5
-        en = debris.mass * (math.sqrt(debris.xvel**2 + debris.yvel**2 + debris.zvel**2))/2 - (debris.G*debris.mass * (1.9 * 10**30))/debris.AU
+        en = 0
         for body in bodies:
             if body == debris:
                 continue
@@ -257,9 +321,18 @@ def main():
         for body in bodies:
             if not body.colided: body.update_position(bodies)
             body.draw(WIN)
-        a, e = elements(debris)
+        a, e, apgng, prgng = elements(debris)
         a = round(a, 3)
+
+        apgangle = apgangle+ apgng
+        prgangle = prgangle+ prgng
+        apg_angles.append(apgangle)
+        prg_angles.append(prgangle)
+
+        e_tot[0].append(e)
+        tstamp_tot.append(time_elapsed*20.16)
         e = round(e, 3)
+        
 
         xan, yan = anode
         xdn, ydn = dnode
@@ -271,7 +344,7 @@ def main():
         if plane!= 0:
             i_rn = math.atan(abs(debris.z)/ abs(plane))
 
-        e_tot.append(e)
+
 
         adisplay = font.render(str(a), 1, WHITE)
         edisplay = font.render(str(e), 1, WHITE)
@@ -292,14 +365,14 @@ def main():
         WIN.blit(eeq, (10, 30))
         WIN.blit(ieq, (10, 50))
         WIN.blit(leq, (10, 70))
-        WIN.blit(eneq, (10, 90))
-        WIN.blit(teq, (10, 110))
+        #WIN.blit(eneq, (10, 90))
+        WIN.blit(teq, (10, 90))
         WIN.blit(adisplay, (50, 10))
         WIN.blit(edisplay, (30, 30))
         WIN.blit(idisplay, (52, 50))
         WIN.blit(longdisplay, (60 ,70))
-        WIN.blit(endisplay, (50, 90))
-        WIN.blit(tdisplay, (45, 110))
+        #WIN.blit(endisplay, (50, 90))
+        WIN.blit(tdisplay, (45, 90))
         
         if top == 0: 
             #print(anode)
@@ -320,3 +393,57 @@ def main():
         pygame.display.update()
     pygame.quit()
 main()
+
+#sub = plt.subplot()
+#fig, ax = plt.subplots()
+plt.plot(tstamp_tot, apg_angles, label = "apogee")
+plt.plot(tstamp_tot, prg_angles, label = "perigee")
+plt.legend()
+plt.show()
+
+delta_v = []
+delta_e = [0]
+def deltae():
+    for i in range(20):
+        run = True
+        global time_elapsed, xn, yn
+        time_elapsed = 0
+        delta_v.append(100*(i))
+        clock = pygame.time.Clock()
+
+        while run:
+            
+            clock.tick(60)
+            millis = clock.get_time()
+            time_elapsed += debris.TIMESTEP/millis
+            if time_elapsed * 20.16 > 30000:
+                run = False
+            WIN.fill((0,0,0))
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+            for body in bodies:
+                if not body.colided: body.update_position(bodies)
+            a, e = elements(debris)
+            a = round(a, 3)
+
+
+            e_tot[i].append(e)
+        
+            e = round(e, 3)
+            progr = font.render("Tinkering... Progress so far: ", 1, WHITE)
+            WIN.blit(progr , (10, 10))
+            actualprogr = font.render(str(int(30000 - time_elapsed*20.16)), 1, WHITE)
+            WIN.blit(actualprogr, (30, 30))
+            iteration = font.render(str(i), 1, WHITE)
+            WIN.blit(iteration, (30, 50))
+            pygame.display.update()
+    for i in range(1, 20):
+        delta_e.append(abs(max(e_tot[0]) - max(e_tot[i])))
+#deltae()
+
+#figure, ax2 = plt.subplots()
+
+#ax2.plot(delta_v, delta_e)
+
+#plt.show()
