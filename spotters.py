@@ -27,11 +27,11 @@ apg_x, apg_y, apg_z = 0, 0, 0
 prg_x, prg_y, prg_z= 0, 0, 0
 
 apg_angles = []
-apgangle = -3.15 + 0.00287
+apgangle = 0#-3.15 + 0.00287
 prg_angles = []
-prgangle = -0.395 + 0.02 - 0.006 - 0.0142
-apg_selected = False
-prg_selected = False
+prgangle = -0.3952# + 0.02 - 0.006 - 0.0142
+apgpseudo = 0
+prgpseudo = 0
 
 apg0 = 0
 prg0 = 0
@@ -200,7 +200,7 @@ apg_neg_ang = 0
 prg_neg_ang = 0
 
 def elements(self):
-    global apg_neg_ang, prg_neg_ang, apg_x, prg_x, apg_y, prg_y, apg_z, prg_z, apg_selected, prg_selected, apg0, prg0, apg_angles, prg_angles, apg0_x, apg0_y, apg0_z, prg0_x, prg0_y, prg0_z
+    global prgpseudo, apgpseudo, apg_neg_ang, prg_neg_ang, apg_x, prg_x, apg_y, prg_y, apg_z, prg_z, apg_selected, prg_selected, apg0, prg0, apg_angles, prg_angles, apg0_x, apg0_y, apg0_z, prg0_x, prg0_y, prg0_z
     
     apgang = 0
     apgsgn = 0
@@ -223,9 +223,12 @@ def elements(self):
         if ((self.yvel > 0 and self.y < apg0_y) or (self.yvel < 0 and self.y > apg0_y)) and apg_neg_ang == 0:
             apg_neg_ang = -1 * apgang
             apgang = 0
+            print("aici intra")
+
     elif apg_neg_ang != 0:
-        apgang = apgang + apg_neg_ang
+        apgang = apgpseudo + apg_neg_ang
         apg_neg_ang = 0
+        apgpseudo = 0
     prgang = 0
     if self.distance_to_center <= self.prg:
         if ((self.yvel > 0 and self.y < prg0_y) or (self.yvel < 0 and self.y > prg0_y)) and prg_neg_ang == 0:
@@ -246,8 +249,10 @@ def elements(self):
         if ((self.yvel > 0 and self.y < prg0_y) or (self.yvel < 0 and self.y > prg0_y)) and prg_neg_ang == 0:
             prg_neg_ang = -1*prgang
             prgang = 0
+
     elif prg_neg_ang != 0:
-        prgang = prgang + prg_neg_ang
+        prgang = prgpseudo + prg_neg_ang
+        prgpseudo = 0
         prg_neg_ang = 0
     a = (self.apg + self.prg)/2
     e = (self.apg/a) - 1
@@ -296,7 +301,7 @@ def main():
     clock = pygame.time.Clock()
 
     while run:
-        global time_elapsed, xn, yn, apgangle, prgangle
+        global time_elapsed, xn, yn, apgangle, prgangle, apgpseudo, prgpseudo
         clock.tick(60)
         millis = clock.get_time()
         time_elapsed += debris.TIMESTEP/millis
@@ -324,8 +329,14 @@ def main():
         a, e, apgng, prgng = elements(debris)
         a = round(a, 3)
 
-        apgangle = apgangle+ apgng
-        prgangle = prgangle+ prgng
+        if apg_neg_ang == 0: 
+            apgangle = apgangle+ apgng
+        else:
+            apgpseudo+= apgng
+        if prg_neg_ang == 0:
+            prgangle = prgangle+ prgng
+        else:
+            prgpseudo+= prgng
         apg_angles.append(apgangle)
         prg_angles.append(prgangle)
 
@@ -399,6 +410,8 @@ main()
 plt.plot(tstamp_tot, apg_angles, label = "apogee")
 plt.plot(tstamp_tot, prg_angles, label = "perigee")
 plt.legend()
+plt.xlabel("Timestamp (s)")
+plt.ylabel("Shift angle (rad)")
 plt.show()
 
 delta_v = []
